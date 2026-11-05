@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#101010">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Gym Plan">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>My Gym Plan</title>
+<style>
+:root{color-scheme:light;--ink:#101010;--muted:#777;--bg:#f2f2f7;--card:#fff;--accent:#111}
+*{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",sans-serif;background:var(--bg);color:var(--ink);padding-bottom:calc(88px + env(safe-area-inset-bottom))}
+header{background:#101010;color:#fff;padding:calc(18px + env(safe-area-inset-top)) 18px 17px;position:sticky;top:0;z-index:5}
+h1{font-size:25px;margin:0 0 4px;font-weight:800}.sub{opacity:.68;font-size:13px}
+nav{display:flex;gap:8px;overflow-x:auto;padding:12px 14px;background:#fff;position:sticky;top:calc(74px + env(safe-area-inset-top));z-index:4;scrollbar-width:none}
+nav button{border:0;background:#eee;border-radius:22px;padding:10px 15px;white-space:nowrap;font-weight:700;font-size:14px}
+nav button.active{background:#111;color:white}
+main{max-width:650px;margin:auto;padding:14px 14px 25px}
+.day-title{font-size:22px;font-weight:850;margin:8px 0 14px;line-height:1.2}
+.card,.info{background:var(--card);border-radius:17px;padding:14px;margin-bottom:10px;box-shadow:0 2px 12px #0000000a}
+.exercise{display:flex;align-items:center;gap:11px}.check{width:25px;height:25px;accent-color:#111;flex-shrink:0}
+.name{font-weight:750;flex:1;font-size:15px;line-height:1.3}.sets{font-size:13px;color:#666;margin-top:4px;font-weight:500}.rest{font-size:12px;color:#777;margin-top:3px}
+.start{border:0;background:#111;color:white;border-radius:11px;padding:10px 12px;font-weight:750;font-size:13px}
+.info{font-size:13px;line-height:1.5;color:#444}
+.progress{height:7px;background:#e7e7eb;border-radius:10px;overflow:hidden;margin:8px 0 3px}.bar{height:100%;background:#111;width:0;transition:width .2s}
+.timer{position:fixed;bottom:0;left:0;right:0;background:#101010;color:#fff;padding:12px 14px calc(12px + env(safe-area-inset-bottom));display:none;z-index:10}
+.timer-inner{max-width:650px;margin:auto;display:flex;align-items:center;gap:8px}
+#time{font-size:25px;font-weight:850;min-width:69px;font-variant-numeric:tabular-nums}
+.timer button{border:0;border-radius:10px;padding:10px 11px;font-weight:750;background:#fff;color:#111}
+.timer button.small{background:#333;color:#fff}
+footer{text-align:center;color:#888;font-size:11px;padding:15px}
+</style>
+</head>
+<body>
+<header><h1>My Gym Plan</h1><div class="sub">Follow your workout sequence at your own pace</div></header>
+<nav id="tabs" aria-label="Workout days"></nav>
+<main id="app"></main>
+<footer>Train smart • Recover well • Stay consistent</footer>
+<div class="timer" id="timer"><div class="timer-inner">
+<div id="time">01:30</div><button onclick="toggleTimer()" id="pause">Pause</button>
+<button class="small" onclick="setTimer(60)">60s</button><button class="small" onclick="setTimer(90)">90s</button><button class="small" onclick="setTimer(120)">120s</button>
+</div></div>
+<script>
+const workouts=[
+{day:"Day 1",title:"Chest • Shoulders • Triceps",exercises:[
+["Seated chest press","4 × 8–12","2 min"],["Pec deck fly","3 × 10–12","60–90 sec"],["Standing cable fly","3 × 10–12","60–90 sec"],["Seated shoulder press","3 × 8–12","2 min"],["Dumbbell lateral raises","4 × 12–15","60–90 sec"],["Cable face pulls","3 × 12–15","60–90 sec"],["Seated dip","3 × 8–12","90 sec"],["Cable triceps pushdown","3 × 10–12","60–90 sec"]]},
+{day:"Day 2",title:"Back • Biceps • Forearms",exercises:[
+["Lat pulldown","4 × 8–12","2 min"],["Seated cable row","4 × 8–12","2 min"],["Standing cable lat pushdown","3 × 10–12","60–90 sec"],["Barbell curl","3 × 8–12","90 sec"],["Preacher curl","3 × 10–12","60–90 sec"],["Seated hammer curl","3 × 10–12","60–90 sec"],["Reverse-grip cable curl","2–3 × 12–15","60 sec"]]},
+{day:"Day 3",title:"Legs • Abs",exercises:[
+["Leg press","4 × 8–12","2–3 min"],["Romanian deadlift","3 × 8–10","2–3 min"],["Leg extension","3 × 10–15","60–90 sec"],["Lying leg curl","3 × 10–15","60–90 sec"],["Adductor machine","3 × 12–15","60–90 sec"],["Seated calf raises","4 × 10–15","60–90 sec"],["Cable crunch","3 × 10–15","45–60 sec"],["Captain’s chair leg raises","3 × 10–15","45–60 sec"]]},
+{day:"Recovery",title:"REST / RECOVERY",rest:true},
+{day:"Day 4",title:"Chest • Shoulders • Triceps",exercises:[
+["Bench press","4 × 6–10","2–3 min"],["Incline barbell press","3 × 8–10","2 min"],["Dumbbell/cable pullover","3 × 10–12","90 sec"],["Cable/dumbbell lateral raises","4 × 12–15","60–90 sec"],["One-arm cable lateral raise","3 × 12–15","60–90 sec"],["Machine reverse fly","3 × 12–15","60–90 sec"],["Dumbbell overhead extension","3 × 10–12","60–90 sec"],["Single-arm cable triceps pushdown","3 × 10–12","60–90 sec"]]},
+{day:"Day 5",title:"Back • Biceps • Forearms",exercises:[
+["Lat pulldown","4 × 8–12","2 min"],["Single-arm seated row","4 × 8–12","2 min"],["Chest-supported row","3 × 10–12","90–120 sec"],["Straight-arm cable pulldown","3 × 10–15","60–90 sec"],["Barbell curl","3 × 8–12","90 sec"],["Preacher curl","3 × 10–12","60–90 sec"],["Hammer curl","3 × 10–12","60–90 sec"],["Reverse-grip curl","2 × 12–15","60 sec"]]},
+{day:"Day 6",title:"Legs • Abs",exercises:[
+["Hack squat","4 × 8–12","2–3 min"],["Romanian deadlift","3 × 8–10","2–3 min"],["Leg extension","3 × 10–15","60–90 sec"],["Lying leg curl","3 × 10–15","60–90 sec"],["Abductor machine","3 × 12–15","60–90 sec"],["Standing calf raises","4 × 10–15","60–90 sec"],["Cable crunch","3 × 10–15","45–60 sec"],["Captain’s chair leg raises","3 × 10–15","45–60 sec"]]}
+];
+let current=0,seconds=90,interval=null;
+const tabs=document.getElementById("tabs"),app=document.getElementById("app");
+workouts.forEach((w,i)=>{const b=document.createElement("button");b.textContent=w.day==="Recovery"?"Rest":w.day.replace("Day ","D");b.onclick=()=>show(i);tabs.appendChild(b)});
+function show(i){current=i;[...tabs.children].forEach((b,j)=>b.classList.toggle("active",j===i));const w=workouts[i];app.innerHTML="";
+const title=document.createElement("div");title.className="day-title";title.textContent=w.day+" — "+w.title;app.appendChild(title);
+if(w.rest){app.innerHTML+='<div class="info"><b>Recovery day 💤</b><br>Take this recovery day whenever you need it. Light walking, mobility, hydration and good sleep; no heavy lifting.</div>';return}
+app.innerHTML+='<div class="info">Target: <b>60–75 minutes</b>. Heavy compound lifts: 2–3 min rest. Isolation exercises: 60–90 sec. Keep good technique and leave around 1–3 reps in reserve on most sets.<div class="progress"><div class="bar" id="bar"></div></div><span id="count">0 of '+w.exercises.length+' exercises completed</span></div>';
+w.exercises.forEach((e,n)=>{const c=document.createElement("div");c.className="card";c.innerHTML=`<div class="exercise"><input class="check" type="checkbox" id="c${i}-${n}"><div class="name" id="n${i}-${n}">${e[0]}<div class="sets">${e[1]}</div><div class="rest">Rest: ${e[2]}</div></div><button class="start" onclick="startRest('${e[2]}')">Rest</button></div>`;
+const cb=c.querySelector("input");cb.onchange=()=>{document.getElementById(`n${i}-${n}`).classList.toggle("completed",cb.checked);updateProgress()};app.appendChild(c)});
+}
+function updateProgress(){const w=workouts[current],done=w.exercises.filter((_,n)=>document.getElementById(`c${current}-${n}`).checked).length;document.getElementById("count").textContent=done+" of "+w.exercises.length+" exercises completed";document.getElementById("bar").style.width=(done/w.exercises.length*100)+"%"}
+function startRest(txt){let s=90;if(txt.includes("2–3")||txt.includes("2 min"))s=120;else if(txt.includes("45"))s=45;else if(txt.includes("60"))s=60;setTimer(s)}
+function setTimer(s){seconds=s;document.getElementById("timer").style.display="block";document.getElementById("pause").textContent="Pause";clearInterval(interval);runTimer()}
+function runTimer(){interval=setInterval(()=>{if(seconds<=0){clearInterval(interval);interval=null;document.getElementById("time").textContent="DONE";if(navigator.vibrate)navigator.vibrate([200,100,200]);return}seconds--;renderTime()},1000);renderTime()}
+function toggleTimer(){if(interval){clearInterval(interval);interval=null;document.getElementById("pause").textContent="Resume"}else{document.getElementById("pause").textContent="Pause";runTimer()}}
+function renderTime(){document.getElementById("time").textContent=String(Math.floor(seconds/60)).padStart(2,"0")+":"+String(seconds%60).padStart(2,"0")}
+show(0);
+if("serviceWorker" in navigator && location.protocol.startsWith("http"))window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js"));
+</script>
+</body></html>
